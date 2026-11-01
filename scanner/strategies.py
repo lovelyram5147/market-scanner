@@ -38,7 +38,29 @@ def breakout_signal(df, cfg):
         return "Breakout", "SELL", f"Closed below {n}-bar low"
 
 
+def rsi_pullback_signal(df, cfg):
+    """With-trend entry: RSI dips to 'dip' (e.g. 40) and turns back up, or mirror for sells."""
+    r = rsi(df["Close"], cfg["period"])
+    prev, cur = r.iloc[-2], r.iloc[-1]
+    if prev < cfg["dip"] <= cur:
+        return "RSI pullback", "BUY", f"RSI turned up from dip ({cur:.0f})"
+    if prev > cfg["rise"] >= cur:
+        return "RSI pullback", "SELL", f"RSI turned down from rise ({cur:.0f})"
+
+
+def ema_bounce_signal(df, cfg):
+    """Price touches the EMA and closes back in trend direction with a confirming candle."""
+    e = ema(df["Close"], cfg["period"]).iloc[-1]
+    o, h, l, c = (df[k].iloc[-1] for k in ("Open", "High", "Low", "Close"))
+    if l <= e < c and c > o:
+        return "EMA bounce", "BUY", f"Bounced off EMA{cfg['period']}"
+    if h >= e > c and c < o:
+        return "EMA bounce", "SELL", f"Rejected at EMA{cfg['period']}"
+
+
 REGISTRY = {
+    "rsi_pullback": rsi_pullback_signal,
+    "ema_bounce": ema_bounce_signal,
     "rsi": rsi_signal,
     "ema_cross": ema_cross_signal,
     "macd": macd_signal,

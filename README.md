@@ -1,36 +1,31 @@
-# Market Scanner → Telegram
+# Scalp Scanner → Telegram
 
-Scans forex, crypto, Indian indices/stocks (Nifty, Bank Nifty…) and US stocks on a schedule and sends BUY/SELL signals to Telegram. Free data via Yahoo Finance, free hosting via GitHub Actions.
+Built for **binary / scalping / short intraday** trading with live charts. It scans ~38 markets (all 28 major/minor/cross forex pairs, USDINR, gold, 3 crypto, a few indices/stocks) and tells you **which pair to put on your chart and which way**, so the chart stays your decision tool.
 
-## Market regime (the core filter)
-Every symbol is classified each scan as **TREND** (up/down), **RANGE**, **FLAT** or **VOLATILE** using ADX/DI, a price-efficiency ratio, EMA20/50 alignment and ATR vs its own history. **You only get Telegram messages for TREND markets:**
-- 📈/📉 a market starts trending or reverses direction
-- 🟢/🔴 a strategy signal that agrees with the trend (BUY in uptrend, SELL in downtrend)
-- optional: trend-faded notices and a list of all trending markets (see `alerts:` in `config.yaml`)
+## How it works
+1. **Trend timeframe** (default 5m): every market is classified as TREND (up/down), RANGE, FLAT or VOLATILE (ADX, DI, EMA20/50, efficiency ratio, ATR).
+2. **Entry timeframe** (default 1m): only for trending pairs, it looks for pullback/momentum entries *with* the trend: RSI pullback, EMA21 bounce, MACD cross, 20-bar breakout. By default 2 must agree (`min_confluence`).
+3. Telegram gets: `CALL`/`PUT` setups, trend start/reversal alerts, and a ranked "trending now" list every 15 min. Range/flat/volatile pairs stay silent. Closed markets (weekends, sessions) are skipped automatically.
 
-Tune thresholds under `regime:` in `config.yaml`.
-
-## Strategies (on closed candles)
-RSI re-entry · EMA 9/21 cross · MACD cross · 20-bar breakout. Set `min_confluence: 2` in `config.yaml` to alert only when strategies agree.
-
-## Setup
-1. Telegram: message **@BotFather** → `/newbot` → copy the token. Send any message to your bot, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` to find your `chat.id`.
-2. GitHub repo → Settings → Secrets and variables → Actions → add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`.
-3. Edit `config.yaml` (symbols, timeframes, strategies).
-4. Actions tab → **Market Scan** → Run workflow. It then runs every 15 min.
-
-## Run locally
+## Two ways to run
+**A. On your PC (recommended for 1m scalping)**: checks every 60 seconds.
 ```bash
 pip install -r requirements.txt
-cp .env.example .env && export $(cat .env | xargs)
-python -m scanner.main --test   # test Telegram
-python -m scanner.main          # run a scan
+copy .env.example .env      # then put your token and chat id inside
+python -m scanner.main --test      # Telegram test
+python -m scanner.main --loop 60   # run continuously (or double-click run_local.bat)
 ```
+**B. GitHub Actions (free cloud, slower)**: uses `config.cloud.yaml` (15m trend / 5m entry) every ~5 min. Add repo secrets `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, then Actions → Market Scan → Run workflow. Use a public repo to avoid the free-minute limit.
 
-## Symbols
-Yahoo tickers: forex `EURUSD=X`, crypto `BTC-USD`, Nifty `^NSEI`, Bank Nifty `^NSEBANK`, NSE stocks `RELIANCE.NS`.
+GitHub can't run every minute and often starts late, so it is too slow for 1m / binary entries.
 
-## Notes
-- Signals are informational, not financial advice.
-- Yahoo intraday data can be delayed ~15 min for some exchanges.
-- Add a new strategy: write a function in `scanner/strategies.py` and register it in `REGISTRY` + `config.yaml`.
+## Tuning (`config.yaml`)
+- `min_confluence: 3` → fewer, cleaner alerts. `max_alerts_per_scan` caps message size.
+- `trend_adx` higher → only stronger trends.
+- `alerts.summary_every_minutes: 0` → turn off the ranked list.
+- `alerts.expiry_hint` is just a reminder line; edit or delete it.
+- Edit the pair lists under `markets:` freely (Yahoo tickers: `EURUSD=X`, `BTC-USD`, `^NSEI`, `RELIANCE.NS`).
+
+## Limits
+- Free Yahoo data can lag 1–2 minutes and has no broker/OTC prices (e.g. Olymp Trade OTC pairs). Always confirm on your live chart before trading.
+- Signals are informational, not financial advice. Test before risking money.

@@ -1,44 +1,62 @@
-# Each market group has its own timeframe and symbols (Yahoo Finance tickers).
+# SCALPING / BINARY profile — run this on your own PC:  python -m scanner.main --loop 60
+# Idea: the trend timeframe decides direction, the entry timeframe finds pullback entries WITH that trend.
+timeframes:
+  trend: {interval: 5m, period: 5d}   # is the pair trending, and which way?
+  entry: {interval: 1m, period: 2d}   # pullback / momentum entry inside that trend
+
 markets:
-  forex:
-    interval: 15m
-    period: 10d
-    symbols: [EURUSD=X, GBPUSD=X, USDJPY=X, AUDUSD=X, USDINR=X, XAUUSD=X]
-  crypto:
-    interval: 15m
-    period: 10d
-    symbols: [BTC-USD, ETH-USD, SOL-USD, BNB-USD, XRP-USD]
-  india:
-    interval: 15m
-    period: 10d
-    symbols: ["^NSEI", "^NSEBANK", RELIANCE.NS, TCS.NS, HDFCBANK.NS, INFY.NS]
-  us_stocks:
-    interval: 1h
-    period: 1mo
-    symbols: [AAPL, MSFT, NVDA, TSLA]
+  forex_majors: [EURUSD=X, GBPUSD=X, USDJPY=X, USDCHF=X, AUDUSD=X, USDCAD=X, NZDUSD=X]
+  forex_crosses:
+    - EURGBP=X
+    - EURJPY=X
+    - EURCHF=X
+    - EURAUD=X
+    - EURCAD=X
+    - EURNZD=X
+    - GBPJPY=X
+    - GBPCHF=X
+    - GBPAUD=X
+    - GBPCAD=X
+    - GBPNZD=X
+    - AUDJPY=X
+    - AUDNZD=X
+    - AUDCAD=X
+    - AUDCHF=X
+    - NZDJPY=X
+    - NZDCAD=X
+    - NZDCHF=X
+    - CADJPY=X
+    - CADCHF=X
+    - CHFJPY=X
+  forex_other: [USDINR=X, GC=F]        # GC=F = gold futures
+  crypto: [BTC-USD, ETH-USD, SOL-USD]  # kept small on purpose
+  indices_stocks: ["^NSEI", "^NSEBANK", "^GSPC", AAPL, TSLA]
 
-strategies:
-  rsi:        {enabled: true, period: 14, oversold: 30, overbought: 70}
-  ema_cross:  {enabled: true, fast: 9, slow: 21}
-  macd:       {enabled: true}
-  breakout:   {enabled: true, lookback: 20}
+strategies:                            # run on the ENTRY timeframe, with-trend only
+  rsi_pullback: {enabled: true, period: 14, dip: 40, rise: 60}
+  ema_bounce:   {enabled: true, period: 21}
+  macd:         {enabled: true}
+  breakout:     {enabled: true, lookback: 20}
+  ema_cross:    {enabled: false, fast: 9, slow: 21}
 
-# Only alert when at least this many strategies agree on the same symbol/direction
-min_confluence: 1
+min_confluence: 2          # at least 2 strategies must agree (raise to 3 for fewer, cleaner alerts)
+max_alerts_per_scan: 8     # strongest trends first
+skip_volatile_entry: true  # ignore entries while the entry timeframe is spiking
+max_age_bars: 5            # skip pairs whose data is older than 5 candles (market closed)
 
-# Market regime detection: TREND / RANGE / FLAT / VOLATILE
 regime:
   adx_period: 14
-  trend_adx: 25          # ADX at/above this = trending
-  min_efficiency: 0.30   # price must move fairly directly (filters choppy spikes)
-  min_efficiency_long: 0.15  # same test over 50 bars, so range swings don't count as trends
-  volatile_ratio: 1.8    # ATR this many times normal = volatile
-  flat_percentile: 0.20  # ATR in the quietest 20% of recent bars = flat
+  trend_adx: 25
+  min_efficiency: 0.30
+  min_efficiency_long: 0.15
+  volatile_ratio: 1.8
+  flat_percentile: 0.20
   range_adx: 20
 
-# You only hear about TRENDING markets
 alerts:
-  notify_trend_start: true       # when a market starts trending or flips direction
-  notify_aligned_signals: true   # BUY signals in uptrends / SELL in downtrends only
-  notify_trend_end: false        # message when a trend fades
-  summary_every_scan: false      # list all currently trending markets each scan
+  notify_trend_start: true       # "EURUSD 5m uptrend started"
+  notify_aligned_signals: true   # entry signals that agree with the trend
+  notify_trend_end: false
+  summary_every_minutes: 15      # ranked list of trending pairs; 0 = off
+  labels: {BUY: CALL, SELL: PUT}
+  expiry_hint: "1-3 min"         # just a reminder line; delete or change it
