@@ -2,7 +2,7 @@ name: Market Scan
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # every 15 min (GitHub may delay a few minutes)
+    - cron: "*/5 * * * *"    # every 5 min (GitHub minimum; may be delayed)
   workflow_dispatch:
 
 concurrency:
@@ -27,7 +27,7 @@ jobs:
           key: scanner-state-${{ github.run_id }}
           restore-keys: scanner-state-
 
-      - run: python -m scanner.main
+      - run: python -m scanner.main --config config.cloud.yaml
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
