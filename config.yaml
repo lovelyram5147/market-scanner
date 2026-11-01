@@ -1,0 +1,44 @@
+# Each market group has its own timeframe and symbols (Yahoo Finance tickers).
+markets:
+  forex:
+    interval: 15m
+    period: 10d
+    symbols: [EURUSD=X, GBPUSD=X, USDJPY=X, AUDUSD=X, USDINR=X, XAUUSD=X]
+  crypto:
+    interval: 15m
+    period: 10d
+    symbols: [BTC-USD, ETH-USD, SOL-USD, BNB-USD, XRP-USD]
+  india:
+    interval: 15m
+    period: 10d
+    symbols: ["^NSEI", "^NSEBANK", RELIANCE.NS, TCS.NS, HDFCBANK.NS, INFY.NS]
+  us_stocks:
+    interval: 1h
+    period: 1mo
+    symbols: [AAPL, MSFT, NVDA, TSLA]
+
+strategies:
+  rsi:        {enabled: true, period: 14, oversold: 30, overbought: 70}
+  ema_cross:  {enabled: true, fast: 9, slow: 21}
+  macd:       {enabled: true}
+  breakout:   {enabled: true, lookback: 20}
+
+# Only alert when at least this many strategies agree on the same symbol/direction
+min_confluence: 1
+
+# Market regime detection: TREND / RANGE / FLAT / VOLATILE
+regime:
+  adx_period: 14
+  trend_adx: 25          # ADX at/above this = trending
+  min_efficiency: 0.30   # price must move fairly directly (filters choppy spikes)
+  min_efficiency_long: 0.15  # same test over 50 bars, so range swings don't count as trends
+  volatile_ratio: 1.8    # ATR this many times normal = volatile
+  flat_percentile: 0.20  # ATR in the quietest 20% of recent bars = flat
+  range_adx: 20
+
+# You only hear about TRENDING markets
+alerts:
+  notify_trend_start: true       # when a market starts trending or flips direction
+  notify_aligned_signals: true   # BUY signals in uptrends / SELL in downtrends only
+  notify_trend_end: false        # message when a trend fades
+  summary_every_scan: false      # list all currently trending markets each scan
