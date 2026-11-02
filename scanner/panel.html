@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scalp Scanner</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--line:#2a3340;--text:#e6edf3;--muted:#8b949e;
+--up:#3fb950;--down:#f85149;--warn:#d29922;--blue:#58a6ff;--dim:#484f58}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+h1{font-size:17px;margin:0;font-weight:650}
+.pill{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid var(--line);color:var(--muted)}
+.pill.run{color:var(--up);border-color:#238636}.pill.scan{color:var(--blue);border-color:#1f6feb}.pill.off{color:var(--warn);border-color:#9e6a03}
+.sp{flex:1}.meta{color:var(--muted);font-size:12px}
+button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:6px 12px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--blue)}
+button.primary{background:#238636;border-color:#2ea043}button.warn{background:#9e6a03;border-color:#d29922}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;padding:14px 18px;align-items:start}
+@media(max-width:1150px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.kpi{padding:10px 14px}.kpi b{font-size:22px;display:block}.kpi span{color:var(--muted);font-size:12px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.chip{padding:4px 11px;border-radius:99px;border:1px solid var(--line);background:transparent;font-size:13px}
+.chip.on{background:#1f6feb33;border-color:var(--blue);color:var(--blue)}
+.tabs{display:flex;gap:6px;margin:0 0 12px}
+.tab{padding:7px 16px;border-radius:8px}.tab.on{background:#1f6feb33;border-color:var(--blue);color:var(--blue)}
+input[type=text],input[type=number],input[type=password],select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:6px 9px;font:inherit}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 12px;border-bottom:1px solid #212833;white-space:nowrap}
+tbody tr:hover td{background:#1a212c}
+tr.click{cursor:pointer}
+tr.fresh td{animation:flash 2.5s ease-out}tr.muted td{opacity:.45}
+@keyframes flash{0%{background:#1f6feb55}100%{background:transparent}}
+.pair{font-weight:650}.grp{color:var(--muted);font-size:12px}
+.b{display:inline-block;min-width:74px;text-align:center;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700}
+.b.up{background:#23863633;color:var(--up)}.b.down{background:#f8514933;color:var(--down)}
+.b.range{background:#30363d;color:#c9d1d9}.b.flat{background:#21262d;color:var(--muted)}
+.b.volatile{background:#d2992233;color:var(--warn)}.b.closed{background:#161b22;color:var(--dim);border:1px solid var(--line)}
+.b.news{background:#d2992233;color:var(--warn)}
+.bar{display:inline-block;width:54px;height:6px;background:#2a3340;border-radius:3px;vertical-align:middle;margin-right:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--blue)}
+.hot{color:var(--up);font-weight:700}.call{color:var(--up);font-weight:700}.put{color:var(--down);font-weight:700}
+a.chart{color:var(--blue);text-decoration:none;font-size:12px}a.chart:hover{text-decoration:underline}
+.mute{padding:1px 7px;font-size:12px}
+.mt{display:inline-block;padding:1px 6px;margin-right:3px;border-radius:5px;font-size:11px;font-weight:700;background:#21262d;color:var(--dim)}
+.mt.up{background:#23863633;color:var(--up)}.mt.down{background:#f8514933;color:var(--down)}
+.mm{display:inline-block;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:800;border:1px solid}
+.mm.up{color:var(--up);border-color:#238636}.mm.down{color:var(--down);border-color:#da3633}
+.tfchip{padding:3px 10px;border-radius:7px;font-size:13px;font-weight:600}
+.tfchip.on{background:#1f6feb33;border-color:var(--blue);color:var(--blue)}
+.tfchip.off{opacity:.55}
+.side{display:flex;flex-direction:column;gap:14px}
+.sec{padding:12px 14px}.sec h2{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.feed{max-height:380px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.sig{padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);border-left-width:4px}
+.sig.buy{border-left-color:var(--up)}.sig.sell{border-left-color:var(--down)}.sig.trend{border-left-color:var(--blue)}
+.sig .t{color:var(--muted);font-size:11px;float:right}.sig small{display:block;color:var(--muted)}
+.cd{color:var(--warn);font-weight:700}
+.empty{color:var(--muted);padding:14px;text-align:center}
+details{border-top:1px solid var(--line);padding:8px 0}details:first-of-type{border-top:0}
+summary{cursor:pointer;font-weight:600;padding:3px 0}
+.f{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;margin:7px 0}
+.f input[type=number],.f select{width:84px}
+.multi{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0 8px;font-size:13px}
+.hint{color:var(--muted);font-size:12px;margin:-2px 0 4px}
+.msg{font-size:12px;margin-top:6px;min-height:16px}.msg.ok{color:var(--up)}.msg.bad{color:var(--down)}
+.err{background:#f8514922;border:1px solid var(--down);color:#ffa198;padding:8px 14px;margin:14px 18px 0;border-radius:8px;font-size:13px}
+.sbars{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.sb{text-align:center;font-size:12px}.sb .col{height:70px;position:relative;background:#11161d;border-radius:6px;margin:4px 0}
+.sb .fill{position:absolute;left:0;right:0;border-radius:4px}
+.sb .zero{position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.rbox{padding:12px 14px}.rbox b{font-size:24px}
+.modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:20}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(1040px,94vw);padding:14px}
+.mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+canvas{width:100%;height:auto;background:#0d1117;border-radius:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>📡 Scalp Scanner</h1>
+  <span id="status" class="pill">connecting…</span>
+  <span id="sessBanner" class="pill off" style="display:none">Outside chosen sessions · alerts paused</span>
+  <span class="meta" id="meta"></span>
+  <span class="sp"></span>
+  <button id="soundBtn" title="Beep when a new entry signal appears">🔔 Sound on</button>
+  <button id="scanBtn">Scan now</button>
+  <button id="runBtn" class="warn">Pause</button>
+</header>
+<div id="err" class="err" style="display:none"></div>
+
+<div class="wrap">
+  <main>
+    <div id="strengthCard" class="card sec" style="display:none;margin-bottom:14px">
+      <h2>Currency strength <span class="meta" id="strengthNote"></span></h2>
+      <div class="sbars" id="strength"></div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="scan">Scanner</button>
+      <button class="tab" data-tab="res">Results</button>
+    </div>
+
+    <section id="tab-scan">
+      <div class="kpis">
+        <div class="card kpi"><b id="kTrend">–</b><span id="kTrendL">Trending</span></div>
+        <div class="card kpi"><b id="kRange">–</b><span>Range</span></div>
+        <div class="card kpi"><b id="kFlat">–</b><span>Flat</span></div>
+        <div class="card kpi"><b id="kVol">–</b><span>Volatile</span></div>
+        <div class="card kpi"><b id="kClosed">–</b><span>Closed / no data / muted</span></div>
+      </div>
+      <div class="card">
+        <div class="toolbar" id="mtfbar"></div>
+        <div class="toolbar" id="filters">
+          <button class="chip" data-f="all">All</button>
+          <button class="chip" data-f="trend">Trending</button>
+          <button class="chip" data-f="up">▲ Up</button>
+          <button class="chip" data-f="down">▼ Down</button>
+          <button class="chip" data-f="match">🧭 Matched</button>
+          <select id="grpSel"></select>
+          <input type="text" id="search" placeholder="Search pair…" style="width:140px">
+          <span class="sp"></span>
+          <span class="meta" id="shown"></span>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Pair</th><th>Group</th><th>Price</th><th>Trend</th><th>Strength (ADX)</th><th id="thEntry">Entry</th><th>Setup</th><th id="thMtf">Timeframes</th><th id="thGap">Ccy gap</th><th>Last signal</th><th>Chart</th><th></th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <div id="noRows" class="empty" style="display:none">Waiting for the first scan…</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-res" style="display:none">
+      <div class="card sec">
+        <div class="toolbar" style="border:0;padding:0 0 10px">
+          <span>Expiry after</span><select id="r_k"></select><span class="meta" id="r_unit"></span>
+          <span style="margin-left:14px">Payout %</span><input type="number" id="r_payout" value="85" min="10" max="200" style="width:74px">
+          <span class="meta" id="r_be"></span>
+        </div>
+        <div class="kpis" id="r_kpis" style="grid-template-columns:repeat(3,1fr);margin:0"></div>
+        <div class="hint" style="margin-top:10px">Measured on Yahoo prices, not your broker’s. Ignore any number with fewer than about 100 results behind it.</div>
+      </div>
+      <div class="grid2">
+        <div class="card sec"><h2>By pair</h2><div class="tablewrap" id="r_pair"></div></div>
+        <div class="card sec"><h2>By strategy</h2><div class="tablewrap" id="r_strat"></div></div>
+        <div class="card sec"><h2>By hour (UTC)</h2><div class="tablewrap" id="r_hour"></div></div>
+        <div class="card sec"><h2>By direction</h2><div class="tablewrap" id="r_dir"></div></div>
+      </div>
+      <div class="card sec" style="margin-top:14px"><h2>Recent signals</h2><div class="tablewrap" id="r_recent"></div></div>
+    </section>
+  </main>
+
+  <aside class="side">
+    <div class="card sec">
+      <h2>Live signals</h2>
+      <div class="feed" id="feed"><div class="empty">No signals yet.</div></div>
+    </div>
+
+    <div class="card sec" id="newsCard" style="display:none">
+      <h2>High-impact news</h2>
+      <div id="news"></div>
+    </div>
+
+    <div class="card sec">
+      <h2>Settings</h2>
+      <div id="settingsForm"></div>
+      <button class="primary" id="saveBtn">Save settings</button>
+      <div class="msg" id="saveMsg"></div>
+    </div>
+
+    <div class="card sec">
+      <h2>Telegram</h2>
+      <div class="meta" id="tgState" style="margin-bottom:8px"></div>
+      <div class="f" style="grid-template-columns:1fr"><input type="password" id="tg_token" placeholder="Bot token (from BotFather)"></div>
+      <div class="f" style="grid-template-columns:1fr"><input type="text" id="tg_chat" placeholder="Chat ID, e.g. -100…"></div>
+      <button id="tgSave">Save</button> <button id="tgTest">Send test</button>
+      <div class="msg" id="tgMsg"></div>
+      <div class="meta" style="margin-top:6px">Saved only on this PC, in the .env file.</div>
+    </div>
+  </aside>
+</div>
+
+<div id="modal" class="modal" style="display:none">
+  <div class="mbox">
+    <div class="mhead"><b id="mtitle"></b><button id="mclose">✕ Close</button></div>
+    <canvas id="cv" width="1000" height="440"></canvas>
+    <div class="meta" id="mnote" style="margin-top:6px"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let S = null, view = "trend", grp = "all", q = "", tab = "scan";
+let lastSigId = null, formKey = "", polling = false, clockOffset = 0, statsTick = 0;
+const TFS = ["1m", "5m", "10m", "15m", "30m", "1h"];
+
+async function api(path, body) {
+  const opt = body === undefined ? {} : {method: "POST", headers: {"Content-Type": "application/json", "X-Panel": "1"}, body: JSON.stringify(body)};
+  const r = await fetch(path, opt);
+  return r.json();
+}
+
+// ---------- settings form (one place to add/remove a checkbox) ----------
+const SECTIONS = [
+  {t: "Scanning", open: true, items: [
+    {k: "scan_seconds", t: "num", l: "Scan every (seconds)", min: 20, max: 900},
+    {k: "min_confluence", t: "sel", l: "Strategies that must agree", opts: [1, 2, 3, 4]},
+    {k: "trend_adx", t: "num", l: "Trend strength (ADX ≥)", min: 15, max: 45},
+    {k: "skip_volatile_entry", t: "chk", l: "Skip entries while spiking"},
+    {k: "groups", t: "multi", l: "Markets to scan"}]},
+  {t: "Telegram alerts", items: [
+    {k: "telegram_on", t: "chk", l: "Send to Telegram"},
+    {k: "notify_trend_start", t: "chk", l: "Trend started / reversed"},
+    {k: "notify_signals", t: "chk", l: "Entry signals"},
+    {k: "summary_minutes", t: "num", l: "Ranked summary every (min, 0 = off)", min: 0, max: 180}]},
+  {t: "Cleaner signals", items: [
+    {k: "htf_confirm", t: "chk", l: "Higher timeframe must agree"},
+    {k: "cooldown_on", t: "chk", l: "Cooldown per pair"},
+    {k: "cooldown_minutes", t: "num", l: "   minutes", min: 1, max: 60},
+    {k: "cap_on", t: "chk", l: "Daily signal cap (UTC day)"},
+    {k: "cap_max", t: "num", l: "   max signals", min: 1, max: 500},
+    {k: "sessions_on", t: "chk", l: "Only trade chosen sessions"},
+    {k: "sessions", t: "multi", l: "Sessions (UTC)", opts: ["asia", "london", "newyork"], names: {asia: "Asia 22–08", london: "London 07–16", newyork: "New York 12–22"}},
+    {k: "news_on", t: "chk", l: "Pause pairs around high-impact news"},
+    {k: "news_before", t: "num", l: "   minutes before", min: 0, max: 120},
+    {k: "news_after", t: "num", l: "   minutes after", min: 0, max: 120}]},
+  {t: "Multi-timeframe matcher", items: [
+    {k: "mtf_mode", t: "str", l: "Match using", opts: [["direction", "Direction (EMA20/50)"], ["trend", "Strong trend only"]]},
+    {k: "mtf_need", t: "sel", l: "Must agree (0 = all chosen)", opts: [0, 2, 3, 4, 5, 6]},
+    {k: "mtf_filter", t: "chk", l: "Entry signals must match"},
+    {k: "mtf_notify", t: "chk", l: "Telegram alert when a pair matches"},
+    {t: "hint", l: "Choose the timeframes with the buttons above the table."}]},
+  {t: "Currency strength", items: [
+    {k: "strength_meter", t: "chk", l: "Show strength meter"},
+    {k: "strength_filter", t: "chk", l: "Forex signals must agree with it"}]},
+  {t: "Tracking & display", items: [
+    {k: "tracker", t: "chk", l: "Track results of every signal"},
+    {k: "mini_chart", t: "chk", l: "Click a row for a mini chart"},
+    {k: "candle_countdown", t: "chk", l: "Candle countdown on signals"}]},
+  {t: "Alerts on this PC", items: [
+    {k: "sound_alert", t: "chk", l: "Beep (higher = CALL, lower = PUT)"},
+    {k: "voice_alert", t: "chk", l: "Speak “Call EUR JPY”"},
+    {k: "popup_alert", t: "chk", l: "Desktop popup"}]},
+  {t: "Windows", items: [
+    {k: "autostart", t: "act", l: "Start with Windows (applies at once)"},
+    {k: "tray_icon", t: "chk", l: "System tray icon (next start; needs pystray)"}]},
+];
+
+function buildForm() {
+  const s = S.settings;
+  $("settingsForm").innerHTML = SECTIONS.map(sec => "<details" + (sec.open ? " open" : "") + "><summary>" + sec.t + "</summary>" + sec.items.map(it => {
+    if (it.t === "hint") return '<div class="hint">' + it.l + "</div>";
+    if (it.t === "str") return '<div class="f"><label for="s_' + it.k + '">' + it.l + '</label><select id="s_' + it.k + '" data-k="' + it.k + '" data-t="str" style="width:auto">' + it.opts.map(o => '<option value="' + o[0] + '"' + (o[0] === s[it.k] ? " selected" : "") + ">" + o[1] + "</option>").join("") + "</select></div>";
+    if (it.t === "act" && S.autostart === null) return '<div class="hint">Start with Windows is only available on Windows.</div>';
+    if (it.t === "chk") return '<div class="f"><label for="s_' + it.k + '">' + it.l + '</label><input type="checkbox" id="s_' + it.k + '" data-k="' + it.k + '" data-t="chk"' + (s[it.k] ? " checked" : "") + "></div>";
+    if (it.t === "act") return '<div class="f"><label for="a_' + it.k + '">' + it.l + '</label><input type="checkbox" id="a_' + it.k + '" data-act="' + it.k + '"' + (S[it.k] ? " checked" : "") + "></div>";
+    if (it.t === "num") return '<div class="f"><label for="s_' + it.k + '">' + it.l + '</label><input type="number" id="s_' + it.k + '" data-k="' + it.k + '" data-t="num" min="' + it.min + '" max="' + it.max + '" value="' + s[it.k] + '"></div>';
+    if (it.t === "sel") return '<div class="f"><label for="s_' + it.k + '">' + it.l + '</label><select id="s_' + it.k + '" data-k="' + it.k + '" data-t="num">' + it.opts.map(o => "<option" + (o == s[it.k] ? " selected" : "") + ">" + o + "</option>").join("") + "</select></div>";
+    const opts = it.opts || S.all_groups;
+    return '<div class="hint">' + it.l + '</div><div class="multi" data-k="' + it.k + '" data-t="multi">' + opts.map(o => '<label><input type="checkbox" value="' + o + '"' + (s[it.k].includes(o) ? " checked" : "") + "> " + esc(it.names ? it.names[o] : o.replace(/_/g, " ")) + "</label>").join("") + "</div>";
+  }).join("") + "</details>").join("");
+  document.querySelectorAll("[data-act]").forEach(el => el.onchange = async () => {
+    const r = await api("/api/autostart", {enabled: el.checked});
+    if (!r.ok) { el.checked = !el.checked; alert(r.msg); }
+  });
+}
+
+async function saveSettings() {
+  const body = {};
+  document.querySelectorAll("#settingsForm [data-k]").forEach(el => {
+    const k = el.dataset.k, t = el.dataset.t;
+    if (t === "chk") body[k] = el.checked;
+    else if (t === "num") body[k] = Number(el.value);
+    else if (t === "str") body[k] = el.value;
+    else body[k] = [...el.querySelectorAll("input:checked")].map(i => i.value);
+  });
+  if (!body.groups.length) { msg("saveMsg", false, "Pick at least one market."); return; }
+  if (body.popup_alert && "Notification" in window && Notification.permission === "default") await Notification.requestPermission();
+  await api("/api/settings", body);
+  formKey = ""; msg("saveMsg", true, "Saved. Applies from the next scan."); poll();
+}
+function msg(id, ok, text) { const e = $(id); e.className = "msg " + (ok ? "ok" : "bad"); e.textContent = text; if (ok) setTimeout(() => e.textContent = "", 3500); }
+
+// ---------- helpers ----------
+function tv(sym) {
+  const m = {"^NSEI":"NSE:NIFTY","^NSEBANK":"NSE:BANKNIFTY","^GSPC":"SP:SPX","GC=F":"OANDA:XAUUSD","USDINR=X":"FX_IDC:USDINR"};
+  if (m[sym]) return m[sym];
+  if (sym.endsWith("=X")) return "FX:" + sym.replace("=X", "");
+  if (sym.endsWith("-USD")) return "BINANCE:" + sym.replace("-USD", "") + "USDT";
+  if (sym.endsWith(".NS")) return "NSE:" + sym.replace(".NS", "");
+  return sym;
+}
+const nowS = () => Date.now() / 1000 + clockOffset;
+function ago(ts) {
+  const s = Math.max(0, Math.round(nowS() - ts));
+  if (s < 60) return s + "s ago";
+  if (s < 3600) return Math.round(s / 60) + "m ago";
+  return Math.round(s / 3600) + "h ago";
+}
+const entryMin = () => ({"1m": 1, "2m": 2, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "60m": 60}[S.timeframes.entry] || 1);
+function fmtPrice(p) { return p == null ? "–" : Number(p).toPrecision(p > 100 ? 7 : 6).replace(/\.?0+$/, ""); }
+function spoken(name, dir) { const n = /^[A-Z]{6}$/.test(name) ? name.slice(0, 3) + " " + name.slice(3) : name; return (dir === "BUY" ? "Call " : "Put ") + n; }
+
+function beep(dir) {
+  try {
+    const c = new (window.AudioContext || window.webkitAudioContext)();
+    const t = c.currentTime;
+    [[dir === "BUY" ? 660 : 520, 0], [dir === "BUY" ? 990 : 330, 0.16]].forEach(([f, d]) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination); o.frequency.value = f; g.gain.value = 0.08;
+      o.start(t + d); o.stop(t + d + 0.14);
+    });
+  } catch (e) {}
+}
+
+function badge(r) {
+  if (r.status === "muted") return '<span class="b closed">MUTED</span>';
+  if (r.status === "closed") return '<span class="b closed">CLOSED</span>';
+  if (r.status !== "ok") return '<span class="b closed">NO DATA</span>';
+  if (r.news) return '<span class="b news" title="' + esc(r.news) + '">📰 NEWS</span>';
+  if (r.regime === "TREND") return r.direction === "UP" ? '<span class="b up">▲ UP</span>' : '<span class="b down">▼ DOWN</span>';
+  return '<span class="b ' + r.regime.toLowerCase() + '">' + r.regime + "</span>";
+}
+
+// ---------- render ----------
+function render() {
+  const s = S.settings, tf = S.timeframes;
+  clockOffset = S.now - Date.now() / 1000;
+  const st = $("status");
+  if (S.busy) { st.textContent = "Scanning…"; st.className = "pill scan"; }
+  else if (S.running) { st.textContent = "Running"; st.className = "pill run"; }
+  else { st.textContent = "Paused"; st.className = "pill off"; }
+  $("runBtn").textContent = S.running ? "Pause" : "Start";
+  $("runBtn").className = S.running ? "warn" : "primary";
+  $("soundBtn").textContent = s.sound_alert ? "🔔 Sound on" : "🔕 Sound off";
+  $("sessBanner").style.display = (s.sessions_on && !S.session_open) ? "inline-block" : "none";
+  let meta = "Trend " + tf.trend + " → entry " + tf.entry;
+  if (S.last_scan) meta += " · last scan " + ago(S.last_scan) + (S.scan_secs ? " (" + S.scan_secs.toFixed(1) + "s)" : "");
+  if (S.running && S.next_in != null && !S.busy) meta += " · next in " + Math.ceil(S.next_in) + "s";
+  $("meta").textContent = meta;
+  $("thEntry").textContent = "Entry (" + tf.entry + ")";
+  $("kTrendL").textContent = "Trending (" + tf.trend + ")";
+  $("thGap").style.display = s.strength_meter ? "" : "none";
+  $("thMtf").style.display = s.mtf_on ? "" : "none";
+  renderMtfBar();
+  const e = $("err");
+  e.style.display = S.error ? "block" : "none"; e.textContent = S.error ? "Last scan failed: " + S.error : "";
+
+  const c = S.counts || {};
+  $("kTrend").textContent = c.TREND || 0; $("kRange").textContent = c.RANGE || 0;
+  $("kFlat").textContent = c.FLAT || 0; $("kVol").textContent = c.VOLATILE || 0;
+  $("kClosed").textContent = S.rows.filter(r => r.status !== "ok").length;
+
+  // strength bars
+  $("strengthCard").style.display = (s.strength_meter && S.strength.length) ? "block" : "none";
+  $("strength").innerHTML = S.strength.map(x => {
+    const h = Math.min(50, Math.abs(x.v) / 2), up = x.v >= 0;
+    return '<div class="sb"><b>' + x.ccy + '</b><div class="col"><div class="zero"></div><div class="fill" style="' + (up ? "bottom:50%;" : "top:50%;") + "height:" + h + "%;background:" + (up ? "var(--up)" : "var(--down)") + '"></div></div><span class="' + (up ? "call" : "put") + '">' + (x.v > 0 ? "+" : "") + Math.round(x.v) + "</span></div>";
+  }).join("");
+  $("strengthNote").textContent = S.strength.length ? "· strongest " + S.strength[0].ccy + ", weakest " + S.strength[S.strength.length - 1].ccy : "";
+
+  // group dropdown
+  const sel = $("grpSel");
+  if (sel.options.length !== S.all_groups.length + 1) {
+    sel.innerHTML = '<option value="all">All markets</option>' + S.all_groups.map(g => '<option value="' + g + '">' + g.replace(/_/g, " ") + "</option>").join("");
+    sel.value = grp;
+  }
+
+  // table
+  let rows = S.rows.slice();
+  if (view === "trend") rows = rows.filter(r => r.regime === "TREND");
+  if (view === "up") rows = rows.filter(r => r.regime === "TREND" && r.direction === "UP");
+  if (view === "down") rows = rows.filter(r => r.regime === "TREND" && r.direction === "DOWN");
+  if (view === "match") rows = rows.filter(r => r.mtf_match);
+  if (grp !== "all") rows = rows.filter(r => r.market === grp);
+  if (q) rows = rows.filter(r => (r.name + r.sym).toLowerCase().includes(q));
+  rows.sort((a, b) => ((b.regime === "TREND") - (a.regime === "TREND")) || ((b.adx || 0) - (a.adx || 0)) || a.name.localeCompare(b.name));
+  $("shown").textContent = rows.length + " of " + S.rows.length + " pairs";
+  $("noRows").style.display = rows.length ? "none" : "block";
+  $("noRows").textContent = S.rows.length ? "Nothing matches this filter. Try “All”." : "Waiting for the first scan…";
+  $("rows").innerHTML = rows.map(r => {
+    const ok = r.status === "ok", muted = r.status === "muted", ls = r.last_signal;
+    const fresh = ls && (nowS() - ls.ts) < 120;
+    const last = ls ? '<span class="' + (ls.dir === "BUY" ? "call" : "put") + '">' + (ls.dir === "BUY" ? "CALL" : "PUT") + '</span> <span class="meta">' + ago(ls.ts) + "</span>" : '<span class="meta">–</span>';
+    let setup = '<span class="meta">–</span>';
+    if (ok && r.score != null) {
+      const hit = r.score >= s.min_confluence;
+      setup = '<span class="' + (hit ? "hot" : "meta") + '">' + r.score + "/" + S.n_strategies + (hit ? " ✓" : "") + "</span>" + (r.blocked ? ' <span class="meta" title="Signal blocked by this filter">⛔ ' + r.blocked + "</span>" : "");
+    }
+    let mt = '<span class="meta">–</span>';
+    if (ok && r.mtf) {
+      const sel = s.mtf_tfs.filter(t => t in r.mtf), n = sel.length;
+      mt = sel.map(t => '<span class="mt ' + (r.mtf[t] === "UP" ? "up" : r.mtf[t] === "DOWN" ? "down" : "") + '">' + t + (r.mtf[t] === "UP" ? "▲" : r.mtf[t] === "DOWN" ? "▼" : "·") + "</span>").join("") +
+        (r.mtf_match ? ' <span class="mm ' + (r.mtf_match === "UP" ? "up" : "down") + '">' + (r.mtf_n === n ? "ALL" : r.mtf_n + "/" + n) + (r.mtf_match === "UP" ? " ↑" : " ↓") + "</span>" : "");
+    }
+    const gap = r.strength_gap == null ? '<span class="meta">–</span>' : '<span class="' + (r.strength_gap > 0 ? "call" : "put") + '">' + (r.strength_gap > 0 ? "+" : "") + r.strength_gap + "</span>";
+    const adx = ok ? '<span class="bar"><i style="width:' + Math.min(100, r.adx) + '%"></i></span>' + Math.round(r.adx) : '<span class="meta">–</span>';
+    return '<tr class="' + (fresh ? "fresh " : "") + (muted ? "muted " : "") + (ok && s.mini_chart ? "click" : "") + '" data-sym="' + esc(r.sym) + '"><td class="pair">' + esc(r.name) + '</td><td class="grp">' + esc(r.market.replace(/_/g, " ")) + "</td><td>" + (ok ? fmtPrice(r.price) : "–") + "</td><td>" + badge(r) + "</td><td>" + adx + '</td><td class="grp">' + (ok ? r.entry_regime.toLowerCase() : "–") + "</td><td>" + setup + "</td>" + (s.mtf_on ? "<td>" + mt + "</td>" : "") + (s.strength_meter ? "<td>" + gap + "</td>" : "") + "<td>" + last + '</td><td><a class="chart" target="_blank" rel="noopener" href="https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tv(r.sym)) + '">TradingView ↗</a></td><td><button class="mute" data-mute="' + esc(r.sym) + '" data-on="' + (muted ? 0 : 1) + '" title="' + (muted ? "Unmute this pair" : "Ignore this pair") + '">' + (muted ? "🔊" : "🔇") + "</button></td></tr>";
+  }).join("");
+
+  // feed
+  const feed = $("feed");
+  if (!S.signals.length) feed.innerHTML = '<div class="empty">No signals yet.</div>';
+  else feed.innerHTML = S.signals.map(x => {
+    const t = new Date(x.ts * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", second: "2-digit"});
+    if (x.kind === "signal") {
+      const call = x.dir === "BUY", young = (nowS() - x.ts) < entryMin() * 60 * 2;
+      return '<div class="sig ' + (call ? "buy" : "sell") + '"><span class="t">' + t + '</span><b class="' + (call ? "call" : "put") + '">' + (call ? "CALL" : "PUT") + "</b> " + esc(x.name) + " @ " + fmtPrice(x.price) + "<small>" + esc(tf.trend) + (call ? " uptrend" : " downtrend") + " · ADX " + Math.round(x.adx) + "</small><small>" + x.reasons.map(esc).join(" · ") + "</small>" + x.notes.map(n => "<small>✔ " + esc(n) + "</small>").join("") + (s.candle_countdown && young ? '<small>⏱ candle closes in <span class="cd" data-cd="1"></span></small>' : "") + "</div>";
+    }
+    if (x.kind === "match") {
+      const up = x.match === "UP";
+      return '<div class="sig ' + (up ? "buy" : "sell") + '"><span class="t">' + t + "</span><b>🧭</b> " + esc(x.name) + " <b class=\"" + (up ? "call" : "put") + '">' + (up ? "all UP" : "all DOWN") + "</b><small>" + Object.entries(x.tfs || {}).map(([k, v]) => k + (v === "UP" ? "▲" : "▼")).join(" · ") + "</small></div>";
+    }
+    const word = x.kind === "end" ? "trend faded" : (x.direction === "UP" ? "uptrend " : "downtrend ") + (x.kind === "flip" ? "reversed" : "started");
+    return '<div class="sig trend"><span class="t">' + t + "</span><b>" + (x.direction === "UP" ? "📈" : x.direction === "DOWN" ? "📉" : "⚪") + "</b> " + esc(x.name) + "<small>" + esc(tf.trend) + " " + word + " · ADX " + Math.round(x.adx) + "</small></div>";
+  }).join("");
+  tickCountdown();
+
+  // news
+  $("newsCard").style.display = s.news_on ? "block" : "none";
+  if (s.news_on) {
+    $("news").innerHTML = S.news_error && !S.news.length ? '<div class="hint">News feed unavailable right now (' + esc(S.news_error) + "). Pairs are not being paused.</div>"
+      : S.news.length ? S.news.map(n => '<div class="sig trend"><span class="t">' + new Date(n.ts * 1000).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"}) + "</span><b>" + esc(n.ccy) + "</b> " + esc(n.title) + "</div>").join("")
+      : '<div class="hint">No high-impact events in the next 24 hours.</div>';
+  }
+
+  // alerts for NEW signals (not on first load)
+  const top = S.signals.length ? S.signals[0].id : 0;
+  if (lastSigId !== null && top > lastSigId) {
+    S.signals.filter(x => x.id > lastSigId && x.kind === "signal").reverse().forEach((x, i) => {
+      if (s.sound_alert && i === 0) beep(x.dir);
+      if (s.voice_alert && "speechSynthesis" in window) { const u = new SpeechSynthesisUtterance(spoken(x.name, x.dir)); u.pitch = x.dir === "BUY" ? 1.3 : 0.7; speechSynthesis.speak(u); }
+      if (s.popup_alert && "Notification" in window && Notification.permission === "granted") new Notification((x.dir === "BUY" ? "CALL " : "PUT ") + x.name, {body: x.reasons.join(" · ") + " @ " + fmtPrice(x.price)});
+    });
+  }
+  lastSigId = top;
+
+  $("tgState").textContent = S.telegram_ready ? "✅ Token and chat ID are saved." : "⚠️ Not set up yet. Alerts show here only.";
+  const key = JSON.stringify([S.all_groups, S.autostart]);
+  if (formKey !== key) { buildForm(); formKey = key; }
+}
+
+function tickCountdown() {
+  if (!S) return;
+  const m = entryMin() * 60, t = nowS(), rem = Math.ceil((Math.floor(t / m) + 1) * m - t);
+  document.querySelectorAll("[data-cd]").forEach(el => el.textContent = rem + "s");
+}
+setInterval(tickCountdown, 1000);
+
+// ---------- multi-timeframe bar ----------
+function renderMtfBar() {
+  const s = S.settings, on = s.mtf_on;
+  $("mtfbar").innerHTML = '<span class="meta">🧭 Timeframe matcher</span><button class="chip' + (on ? " on" : "") + '" data-mtf="toggle">' + (on ? "ON" : "OFF") + "</button>" +
+    TFS.map(t => '<button class="tfchip ' + (s.mtf_tfs.includes(t) ? "on" : "") + (on ? "" : " off") + '" data-tf="' + t + '">' + t + "</button>").join("") +
+    '<span class="meta">' + (on ? "Pairs where the ticked timeframes agree show ALL ↑ / ↓" : "Turn on to compare timeframes") + "</span>";
+}
+$("mtfbar").onclick = async ev => {
+  const b = ev.target.closest("button"); if (!b || !S) return;
+  if (b.dataset.mtf) await api("/api/settings", {mtf_on: !S.settings.mtf_on});
+  else if (b.dataset.tf) {
+    const cur = new Set(S.settings.mtf_tfs); cur.has(b.dataset.tf) ? cur.delete(b.dataset.tf) : cur.add(b.dataset.tf);
+    if (!cur.size) return;                                        // keep at least one
+    await api("/api/settings", {mtf_tfs: TFS.filter(t => cur.has(t)), mtf_on: true});
+  } else return;
+  await api("/api/control", {action: "scan"}); poll();
+};
+
+// ---------- results tab ----------
+function tbl(head, rows) { return rows.length ? "<table><thead><tr>" + head.map(h => "<th>" + h + "</th>").join("") + "</tr></thead><tbody>" + rows.join("") + "</tbody></table>" : '<div class="empty">No finished signals yet.</div>'; }
+function rate(x, be) { const cls = x.n < 20 ? "meta" : (x.rate >= be ? "hot" : "put"); return '<span class="' + cls + '">' + x.rate + "%</span>"; }
+function resIcon(v) { return v === "W" ? '<span class="call">✓</span>' : v === "L" ? '<span class="put">✗</span>' : v === "T" ? "=" : v === "NA" ? '<span class="meta">–</span>' : '<span class="meta">…</span>'; }
+
+async function loadStats() {
+  if (!S) return;
+  const sel = $("r_k");
+  if (!sel.options.length) {
+    sel.innerHTML = [1, 2, 3].map(k => '<option value="' + k + '"' + (k === 2 ? " selected" : "") + ">" + k + " candle" + (k > 1 ? "s" : "") + "</option>").join("");
+    $("r_unit").textContent = "(entry candle = " + S.timeframes.entry + ")";
+  }
+  const R = await api("/api/stats?k=" + sel.value + "&payout=" + encodeURIComponent($("r_payout").value || 85));
+  $("r_be").textContent = "You need about " + R.breakeven + "% wins just to break even.";
+  $("r_kpis").innerHTML = R.expiries.map(k => {
+    const o = R.overall[k];
+    const cls = o.rate == null ? "" : (o.rate >= R.breakeven ? "hot" : "put");
+    return '<div class="card rbox"><span class="meta">' + k + " candle" + (k > 1 ? "s" : "") + '</span><br><b class="' + cls + '">' + (o.rate == null ? "–" : o.rate + "%") + '</b><br><span class="meta">' + o.wins + " W · " + o.losses + " L · " + o.ties + " tie · " + o.pending + " pending</span></div>";
+  }).join("");
+  const be = R.breakeven, line = (x, label) => "<tr><td>" + esc(label) + "</td><td>" + x.wins + "</td><td>" + x.losses + "</td><td>" + rate(x, be) + "</td></tr>";
+  const head = ["", "W", "L", "Win rate"];
+  $("r_pair").innerHTML = tbl(head, R.by_pair.map(x => line(x, x.key)));
+  $("r_strat").innerHTML = tbl(head, R.by_strategy.map(x => line(x, x.key)));
+  $("r_hour").innerHTML = tbl(head, R.by_hour.sort((a, b) => a.key - b.key).map(x => line(x, String(x.key).padStart(2, "0") + ":00")));
+  $("r_dir").innerHTML = tbl(head, R.by_dir.map(x => line(x, x.key === "BUY" ? "CALL" : "PUT")));
+  $("r_recent").innerHTML = tbl(["Time", "Pair", "Side", "Strategies"].concat(R.expiries.map(k => k + "c")), R.recent.map(r =>
+    "<tr><td>" + new Date(r.ts * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) + "</td><td>" + esc(r.name) + '</td><td class="' + (r.dir === "BUY" ? "call" : "put") + '">' + (r.dir === "BUY" ? "CALL" : "PUT") + '</td><td class="grp">' + esc(r.strats.join(", ")) + "</td>" + R.expiries.map(k => "<td>" + resIcon(r.res[k]) + "</td>").join("") + "</tr>"));
+}
+
+// ---------- mini chart ----------
+async function openChart(sym) {
+  const d = await api("/api/chart?sym=" + encodeURIComponent(sym));
+  $("modal").style.display = "flex";
+  if (d.error) { $("mtitle").textContent = sym; $("mnote").textContent = d.error; const c = $("cv").getContext("2d"); c.clearRect(0, 0, 1000, 440); return; }
+  $("mtitle").textContent = d.name + " · " + d.interval + " candles" + (d.regime === "TREND" ? " · trend " + d.direction : d.regime ? " · " + d.regime.toLowerCase() : "");
+  $("mnote").textContent = "Yellow line = EMA21. Green ▲ / red ▼ mark CALL / PUT signals from this scanner.";
+  drawChart(d);
+}
+function drawChart(d) {
+  const cv = $("cv"), g = cv.getContext("2d"), W = cv.width, H = cv.height, pl = 8, pr = 64, pt = 12, pb = 22;
+  g.clearRect(0, 0, W, H);
+  const n = d.c.length, hi = Math.max(...d.h), lo = Math.min(...d.l), pad = (hi - lo) * 0.06 || hi * 0.0005;
+  const top = hi + pad, bot = lo - pad, Y = v => pt + (top - v) / (top - bot) * (H - pt - pb), step = (W - pl - pr) / n, X = i => pl + step * (i + 0.5);
+  g.strokeStyle = "#2a3340"; g.fillStyle = "#8b949e"; g.font = "11px system-ui"; g.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) { const v = bot + (top - bot) * i / 4, y = Y(v); g.beginPath(); g.moveTo(pl, y); g.lineTo(W - pr, y); g.stroke(); g.fillText(fmtPrice(v), W - pr + 6, y + 4); }
+  for (let i = 0; i < n; i++) {
+    const up = d.c[i] >= d.o[i], col = up ? "#3fb950" : "#f85149";
+    g.strokeStyle = col; g.fillStyle = col;
+    g.beginPath(); g.moveTo(X(i), Y(d.h[i])); g.lineTo(X(i), Y(d.l[i])); g.stroke();
+    const y1 = Y(Math.max(d.o[i], d.c[i])), y2 = Y(Math.min(d.o[i], d.c[i]));
+    g.fillRect(X(i) - step * 0.35, y1, step * 0.7, Math.max(1, y2 - y1));
+  }
+  g.strokeStyle = "#d29922"; g.lineWidth = 1.6; g.beginPath();
+  d.ema.forEach((v, i) => { if (v == null) return; i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)); }); g.stroke();
+  (d.marks || []).forEach(m => {
+    const i = d.t.indexOf(Math.round(m.t)); if (i < 0) return;
+    const buy = m.dir === "BUY", y = buy ? Y(d.l[i]) + 14 : Y(d.h[i]) - 14;
+    g.fillStyle = buy ? "#3fb950" : "#f85149"; g.beginPath();
+    if (buy) { g.moveTo(X(i), y - 9); g.lineTo(X(i) - 6, y + 3); g.lineTo(X(i) + 6, y + 3); } else { g.moveTo(X(i), y + 9); g.lineTo(X(i) - 6, y - 3); g.lineTo(X(i) + 6, y - 3); }
+    g.fill();
+  });
+  g.fillStyle = "#8b949e"; g.font = "11px system-ui";
+  [0, Math.floor(n / 2), n - 1].forEach(i => g.fillText(new Date(d.t[i] * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}), Math.min(X(i) - 14, W - pr - 40), H - 6));
+}
+function closeChart() { $("modal").style.display = "none"; }
+
+// ---------- wiring ----------
+async function poll() {
+  if (polling) return; polling = true;
+  try {
+    S = await api("/api/state"); render();
+    if (tab === "res" && (++statsTick % 3 === 1)) loadStats();
+  } catch (e) { $("status").textContent = "Panel offline"; $("status").className = "pill off"; }
+  polling = false;
+}
+function markFilters() { document.querySelectorAll("#filters .chip").forEach(b => b.classList.toggle("on", b.dataset.f === view)); }
+document.querySelectorAll("#filters .chip").forEach(b => b.onclick = () => { view = b.dataset.f; markFilters(); if (S) render(); });
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
+  tab = b.dataset.tab; statsTick = 0;
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === b));
+  $("tab-scan").style.display = tab === "scan" ? "" : "none"; $("tab-res").style.display = tab === "res" ? "" : "none";
+  if (tab === "res") loadStats();
+});
+$("r_k").onchange = loadStats; $("r_payout").onchange = loadStats;
+$("grpSel").onchange = e => { grp = e.target.value; if (S) render(); };
+$("search").oninput = e => { q = e.target.value.trim().toLowerCase(); if (S) render(); };
+$("scanBtn").onclick = async () => { await api("/api/control", {action: "scan"}); poll(); };
+$("runBtn").onclick = async () => { await api("/api/control", {action: S && S.running ? "stop" : "start"}); poll(); };
+$("soundBtn").onclick = async () => { await api("/api/settings", {sound_alert: !S.settings.sound_alert}); await poll(); if (S.settings.sound_alert) beep("BUY"); formKey = ""; };
+$("saveBtn").onclick = saveSettings;
+$("rows").onclick = async ev => {
+  const m = ev.target.closest("[data-mute]");
+  if (m) { await api("/api/mute", {sym: m.dataset.mute, muted: m.dataset.on === "1"}); return; }
+  if (ev.target.closest("a")) return;
+  const tr = ev.target.closest("tr.click");
+  if (tr && S.settings.mini_chart) openChart(tr.dataset.sym);
+};
+$("mclose").onclick = closeChart;
+$("modal").onclick = e => { if (e.target.id === "modal") closeChart(); };
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeChart(); });
+$("tgSave").onclick = async () => {
+  const r = await api("/api/telegram", {token: $("tg_token").value, chat_id: $("tg_chat").value});
+  msg("tgMsg", r.ok, r.ok ? "Saved." : r.msg);
+  if (r.ok) { $("tg_token").value = ""; poll(); }
+};
+$("tgTest").onclick = async () => { const r = await api("/api/telegram/test", {}); msg("tgMsg", r.ok, r.msg); };
+
+// a Worker keeps polling steady even when this tab is in the background (browsers throttle normal timers)
+markFilters(); poll();
+try {
+  const w = new Worker(URL.createObjectURL(new Blob(["setInterval(()=>postMessage(1),2000)"], {type: "text/javascript"})));
+  w.onmessage = poll;
+} catch (e) { setInterval(poll, 2000); }
+</script>
+</body>
+</html>

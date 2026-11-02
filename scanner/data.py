@@ -1,3 +1,5 @@
+import time
+
 import pandas as pd
 import yfinance as yf
 
@@ -9,12 +11,17 @@ def fetch_many(symbols, interval, period):
     out = {}
     if not symbols:
         return out
-    try:
-        raw = yf.download(tickers=" ".join(symbols), interval=interval, period=period,
-                          group_by="ticker", progress=False, auto_adjust=True, threads=True)
-    except Exception as e:
-        print(f"[data] download failed ({interval}): {e}")
-        return out
+    raw = None
+    for attempt in range(2):                      # one retry: Yahoo sometimes throttles shared cloud IPs
+        try:
+            raw = yf.download(tickers=" ".join(symbols), interval=interval, period=period,
+                              group_by="ticker", progress=False, auto_adjust=True, threads=True)
+        except Exception as e:
+            print(f"[data] download failed ({interval}, try {attempt + 1}): {e}")
+            raw = None
+        if raw is not None and not raw.empty:
+            break
+        time.sleep(3)
     if raw is None or raw.empty:
         return out
     for s in symbols:
@@ -41,3 +48,10 @@ def is_fresh(df, interval, max_bars=5):
     ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
     age_min = (pd.Timestamp.now(tz="UTC") - ts).total_seconds() / 60
     return age_min <= MINUTES.get(interval, 5) * max_bars
+
+
+def age_minutes(df):
+    """Minutes since the start of the latest closed candle."""
+    ts = pd.Timestamp(df.index[-1])
+    ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+    return (pd.Timestamp.now(tz="UTC") - ts).total_seconds() / 60

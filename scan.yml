@@ -1,0 +1,44 @@
+name: Timeframe Alignment Scan
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"        # every 5 minutes (GitHub's shortest; it may start a few minutes late)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Send a Telegram message even if nothing is aligned"
+        type: boolean
+        default: true
+
+concurrency:
+  group: align-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      # remembers what was aligned last run, so new/upgraded pairs get a tag
+      - uses: actions/cache@v4
+        with:
+          path: state.json
+          key: align-state-${{ github.run_id }}
+          restore-keys: align-state-
+
+      - name: Scan and send to Telegram
+        run: python -m scanner.align --config config.github.yaml
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TWELVEDATA_API_KEYS: ${{ secrets.TWELVEDATA_API_KEYS }}
+          FORCE_SEND: ${{ inputs.force }}
